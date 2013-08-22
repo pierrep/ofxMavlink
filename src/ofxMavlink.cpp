@@ -596,6 +596,7 @@ void ofxMavlink::readMessage() {
 
                if (packet.fix_type > 2)
                 {
+
                     latitude = packet.lat/(double)1E7;
                     longitude = packet.lon/(double)1E7;
                     altitude = packet.alt/1000.0;
@@ -657,4 +658,201 @@ void ofxMavlink::readMessage() {
         }
     }
 
+}
+
+void ofxMavlink::threadedFunction() {
+
+
+while( isThreadRunning() != 0 ){
+//    static unsigned int imu_receive_counter =
+    uint8_t cp;
+    mavlink_message_t message;
+    mavlink_status_t status;
+    uint8_t msgReceived = false;
+
+    if (read(fd, &cp, 1) > 0)
+    {
+        // Check if a message could be decoded, return the message in case yes
+        msgReceived = mavlink_parse_char(MAVLINK_COMM_1, cp, &message, &status);
+        if (status.packet_rx_drop_count > 0)
+        {
+            if(bDebug) ofLogWarning("ofxMavlink") << "ERROR: DROPPED " << status.packet_rx_drop_count <<" PACKETS:" << " " << cp;
+        }
+    }
+    else
+    {
+        if(bDebug) ofLogNotice("ofxMavlink") << "ERROR: Could not read from fd " << fd;
+    }
+
+    // If a message could be decoded, handle it
+    if(msgReceived)
+    {
+        msgcount++;
+
+        if (bDebug)
+        {
+            fprintf(stderr,"Received serial data: ");
+            unsigned int i;
+            uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+            unsigned int messageLength = mavlink_msg_to_send_buffer(buffer, &message);
+            if (messageLength > MAVLINK_MAX_PACKET_LEN)
+            {
+                fprintf(stderr, "\nFATAL ERROR: MESSAGE LENGTH IS LARGER THAN BUFFER SIZE\n");
+            }
+            else
+            {
+                for (i=0; i<messageLength; i++)
+                {
+                    unsigned char v=buffer[i];
+                    fprintf(stderr,"%02x ", v);
+                }
+                fprintf(stderr,"\n");
+            }
+        }
+
+        //if(bDebug) ofLogNotice("ofxMavlink") << "Received message from serial with ID #" << message.msgid << " (sys:" << message.sysid << "|comp:" << message.compid << "):\n";
+
+
+        switch (message.msgid)
+        {
+            case MAVLINK_MSG_ID_COMMAND_ACK:
+            {
+                mavlink_command_ack_t ack;
+                mavlink_msg_command_ack_decode(&message, &ack);
+                switch (ack.result)
+                {
+                    case MAV_RESULT_ACCEPTED:
+                    {
+                        cout << "SUCCESS: Executed Command: " << ack.command;
+                    }
+                        break;
+                    case MAV_RESULT_TEMPORARILY_REJECTED:
+                    {
+                        cout << "FAILURE: Temporarily rejected Command: " << ack.command;
+                    }
+                        break;
+                    case MAV_RESULT_DENIED:
+                    {
+                        cout << "FAILURE: Denied Command: " << ack.command;
+                    }
+                        break;
+                    case MAV_RESULT_UNSUPPORTED:
+                    {
+                        cout << "FAILURE: Unsupported Command: " << ack.command;
+                    }
+                        break;
+                    case MAV_RESULT_FAILED:
+                    {
+                        cout << "FAILURE: Failed Command: " << ack.command;
+                    }
+                        break;
+                    }
+
+                break;
+            }
+//            case MAVLINK_MSG_ID_COMMAND_ACK:
+//            {
+//                mavlink_command_ack_t ack;
+//                mavlink_msg_command_ack_decode(&message,&ack);
+//                cout << "received CMD_ACK  command=" << ack.command << " result=" << ack.result <<  endl;
+//
+//                if(ack.command == MAV_CMD_COMPONENT_ARM_DISARM) {
+//                   cout << "Acknowledge arm/disarm command";
+//
+//                }
+//                if(ack.result == MAV_CMD_ACK_OK) {
+//                    cout << "received CMD_ACK_OK" << endl;
+//                }
+//                break;
+//            }
+            case MAVLINK_MSG_ID_RAW_IMU:
+            {
+                mavlink_raw_imu_t imu;
+                mavlink_msg_raw_imu_decode(&message, &imu);
+                lock();
+                time_usec = imu.time_usec;
+                unlock();
+                ofLogVerbose("ofxMavlink") << "-- RAW_IMU message received --" << endl;
+                ofLogVerbose("ofxMavlink") << "\t time: (us) " << imu.time_usec << endl;
+                ofLogVerbose("ofxMavlink") << "\t acc:" << imu.xacc << " " << imu.yacc << " " << imu.zacc << endl;
+                ofLogVerbose("ofxMavlink") << "\t gyro: (rad/s)" << imu.xgyro << " " << imu.ygyro << " " << imu.zgyro << endl;
+                ofLogVerbose("ofxMavlink") << "\t mag: (Ga)" << imu.xmag << " " << imu.ymag << " " << imu.zmag << endl;
+                break;
+            }
+
+            case MAVLINK_MSG_ID_GPS_RAW_INT:
+            {
+                ofLogNotice("ofxMavlink") << "-- GPS RAW INT message received --" << endl;
+                mavlink_gps_raw_int_t packet;
+                mavlink_msg_gps_raw_int_decode(&message, &packet);
+
+               if (packet.fix_type > 2)
+                {
+                    lock();
+                    latitude = packet.lat/(double)1E7;
+                    longitude = packet.lon/(double)1E7;
+                    altitude = packet.alt/1000.0;
+                    unlock();
+                    ofLogNotice("ofxMavlink") << "Altitude:" << packet.alt/1000.0 << "latitude:" << (float)packet.lat / 10000000.0 << " longitude:" << (float)packet.lon / 10000000.0 << " ";
+                    ofLogNotice("ofxMavlink") << "Satellites visible:" << packet.satellites_visible << " GPS fix:" << packet.fix_type << endl;
+                //                if (packet.lat != 0.0) {
+                //
+                //                    latitude = (float)packet.lat;
+                //                    longitude = (float)packet.lon;
+                //                    altitude = (float)packet.alt;
+                //                    //ModelData.speed = (float)packet.vel / 100.0;
+                //                    //ModelData.numSat = packet.satellites_visible;
+                //                    gpsfix = packet.fix_type;
+                }
+                break;
+            }
+            case MAVLINK_MSG_ID_HEARTBEAT:
+            {
+
+                mavlink_heartbeat_t packet;
+                mavlink_msg_heartbeat_decode(&message, &packet);
+                int droneType = packet.type;
+                int autoPilot = packet.autopilot;
+
+//                cout << "base mode:" << packet.base_mode << " custom mode:" << packet.custom_mode << endl;
+//                if (packet.base_mode == MAV_MODE_MANUAL_ARMED) {
+//                //ModelData.mode = MODEL_MODE_MANUAL;
+//                    cout << "Manual Mode" << endl;
+//                } else if (packet.base_mode == 128 + 64 + 16) {
+//                //ModelData.mode = MODEL_MODE_RTL;
+//                    cout << "RTL Mode" << endl;
+//                } else if (packet.base_mode == 128 + 16) {
+//                //ModelData.mode = MODEL_MODE_POSHOLD;
+//                    cout << "Poshold Mode" << endl;
+//                } else if (packet.base_mode == 128 + 4) {
+//                //ModelData.mode = MODEL_MODE_MISSION;
+//                    cout << "Mission Mode" << endl;
+//                }
+//                if(packet.base_mode == MAV_MODE_STABILIZE_DISARMED)
+//                {
+//                    cout << "Stablilize disarmed mode" << endl;
+//                }
+
+                ofLogNotice("ofxMavlink") << "-- Heartbeat -- sysId:" << message.sysid << "  compId:" << message.compid << " drone type:" << droneType << " autoPilot:" <<  autoPilot;
+//                if(droneType == MAV_TYPE_QUADROTOR) cout << " Quadrotor"; else cout << droneType;
+//                cout << " Autopilot:";
+//                if(autoPilot == MAV_AUTOPILOT_ARDUPILOTMEGA) cout << " ArduPilotMega"; else cout << autoPilot;
+//                cout << endl;
+
+                if (message.sysid != 0xff) {
+                    lock();
+                    targetId = message.sysid;
+                    compId = message.compid;
+                    //cout << "compid = " << message.compid << " sysid =" << message.sysid;
+                    unlock();
+                }
+                break;
+            }
+
+            default:
+            break;
+        }
+    }
+
+    }
 }

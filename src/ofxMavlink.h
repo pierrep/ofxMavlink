@@ -1,11 +1,10 @@
 #ifndef OFX_MAVLINK_H
 #define OFX_MAVLINK_H
 
-#include "ofxMavlink.h"
 #include <common/mavlink.h>
-#include <string>
+#include "ofMain.h"
 
-class ofxMavlink
+class ofxMavlink : public ofThread
 {
     public:
         ofxMavlink();
@@ -25,12 +24,22 @@ class ofxMavlink
         void setAutoPilotMode(int mode);
         void setDebug(bool debug) {bDebug = debug;};
 
+        void threadedFunction();
+
+        void start(){
+            startThread(true, false);   // blocking, verbose
+        }
+
+        void stop(){
+            stopThread();
+        }
+
+
         double latitude;
         double longitude;
         double altitude;
         int gpsfix;
         unsigned long time_usec;
-
 
     private:
 
