@@ -14,7 +14,7 @@ class ofxMavlink
 
         void readMessage();
         void sendArmCommand(ArmCommand cmd);
-        void connect(std::string uart_name);
+        bool connect(std::string uart_name);
         void disconnect();
         int getMessageCount() {return msgcount;};
         void sendHeartbeat();

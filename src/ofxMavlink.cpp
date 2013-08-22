@@ -192,9 +192,10 @@ bool ofxMavlink::setup_port(int fd, int baud, int data_bits, int stop_bits, bool
 }
 
 
-void ofxMavlink::connect(string uart_name) {
+bool ofxMavlink::connect(string uart_name) {
 	//char *uart_name = (char*)"/dev/ttyUSB0";
 	int baudrate = 57600;
+	bool bSuccess = false;
 
     ofLogNotice("ofxMavlink") << "Trying to connect to " << uart_name;
 
@@ -202,7 +203,7 @@ void ofxMavlink::connect(string uart_name) {
 	if (fd == -1)
 	{
 		ofLogError("ofxMavlink") << "failure, could not open port.";
-		exit(EXIT_FAILURE);
+		//exit(EXIT_FAILURE);
 	}
 	else
 	{
@@ -214,7 +215,7 @@ void ofxMavlink::connect(string uart_name) {
 	if (!setup)
 	{
 		ofLogError("ofxMavlink") << "failure, could not configure port.";
-		exit(EXIT_FAILURE);
+		//exit(EXIT_FAILURE);
 	}
 	else
 	{
@@ -224,13 +225,15 @@ void ofxMavlink::connect(string uart_name) {
 	if (fd == -1 || fd == 0)
 	{
 	    ofLogNotice("ofxMavlink") << "Connection attempt to port " << uart_name <<  " with " << baudrate << " baud, 8N1 failed, exiting.";
-		std::exit(1);
+		//std::exit(1);
 	}
 	else
 	{
+	    bSuccess = true;
 		ofLogNotice("ofxMavlink") << "Connected to" << uart_name <<  " with " << baudrate << " baud, 8 data bits, no parity, 1 stop bit (8N1)";
 	}
 
+	return bSuccess;
 }
 
 void ofxMavlink::disconnect()
@@ -367,7 +370,7 @@ void ofxMavlink::setAutoPilotMode(int _mode) {
 
 void ofxMavlink::sendMissionTakeoff()
 {
-    cout << "Send mission takeoff" << endl;
+    //cout << "Send mission takeoff" << endl;
     uint8_t buf[MAVLINK_MAX_PACKET_LEN];
 
     mavlink_mission_item_t mission;
@@ -401,7 +404,7 @@ void ofxMavlink::sendMissionTakeoff()
 
 void ofxMavlink::sendMissionLand()
 {
-    cout << "Send mission takeoff" << endl;
+    //cout << "Send mission land" << endl;
     uint8_t buf[MAVLINK_MAX_PACKET_LEN];
 
     mavlink_mission_item_t mission;
