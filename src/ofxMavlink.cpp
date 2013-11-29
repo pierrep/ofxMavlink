@@ -532,27 +532,27 @@ void ofxMavlink::readMessage() {
                 {
                     case MAV_RESULT_ACCEPTED:
                     {
-                        cout << "SUCCESS: Executed Command: " << ack.command;
+                        ofLogNotice("ofxMavlink") << "SUCCESS: Executed Command: " << ack.command;
                     }
                         break;
                     case MAV_RESULT_TEMPORARILY_REJECTED:
                     {
-                        cout << "FAILURE: Temporarily rejected Command: " << ack.command;
+                        ofLogError("ofxMavlink") << "FAILURE: Temporarily rejected Command: " << ack.command;
                     }
                         break;
                     case MAV_RESULT_DENIED:
                     {
-                        cout << "FAILURE: Denied Command: " << ack.command;
+                        ofLogError("ofxMavlink") << "FAILURE: Denied Command: " << ack.command;
                     }
                         break;
                     case MAV_RESULT_UNSUPPORTED:
                     {
-                        cout << "FAILURE: Unsupported Command: " << ack.command;
+                        ofLogError("ofxMavlink") << "FAILURE: Unsupported Command: " << ack.command;
                     }
                         break;
                     case MAV_RESULT_FAILED:
                     {
-                        cout << "FAILURE: Failed Command: " << ack.command;
+                        ofLogError("ofxMavlink") << "FAILURE: Failed Command: " << ack.command;
                     }
                         break;
                     }
@@ -640,7 +640,7 @@ void ofxMavlink::readMessage() {
 //                    cout << "Stablilize disarmed mode" << endl;
 //                }
 
-                ofLogWarning("ofxMavlink") << "-- Heartbeat -- sysId:" << message.sysid << "  compId:" << message.compid << " drone type:" << droneType << " autoPilot" <<  autoPilot;
+                ofLogVerbose("ofxMavlink") << "-- Heartbeat -- sysId:" << message.sysid << "  compId:" << message.compid << " drone type:" << droneType << " autoPilot" <<  autoPilot;
 //                if(droneType == MAV_TYPE_QUADROTOR) cout << " Quadrotor"; else cout << droneType;
 //                cout << " Autopilot:";
 //                if(autoPilot == MAV_AUTOPILOT_ARDUPILOTMEGA) cout << " ArduPilotMega"; else cout << autoPilot;
@@ -681,7 +681,7 @@ while( isThreadRunning() != 0 ){
     }
     else
     {
-        if(bDebug) ofLogNotice("ofxMavlink") << "ERROR: Could not read from fd " << fd;
+        if(bDebug) ofLogError("ofxMavlink") << "ERROR: Could not read from fd " << fd;
     }
 
     // If a message could be decoded, handle it
@@ -723,27 +723,27 @@ while( isThreadRunning() != 0 ){
                 {
                     case MAV_RESULT_ACCEPTED:
                     {
-                        cout << "SUCCESS: Executed Command: " << ack.command;
+                        ofLogNotice("ofxMavlink") << "SUCCESS: Executed Command: " << ack.command;
                     }
                         break;
                     case MAV_RESULT_TEMPORARILY_REJECTED:
                     {
-                        cout << "FAILURE: Temporarily rejected Command: " << ack.command;
+                        ofLogError("ofxMavlink") << "FAILURE: Temporarily rejected Command: " << ack.command;
                     }
                         break;
                     case MAV_RESULT_DENIED:
                     {
-                        cout << "FAILURE: Denied Command: " << ack.command;
+                        ofLogError("ofxMavlink") << "FAILURE: Denied Command: " << ack.command;
                     }
                         break;
                     case MAV_RESULT_UNSUPPORTED:
                     {
-                        cout << "FAILURE: Unsupported Command: " << ack.command;
+                        ofLogError("ofxMavlink") << "FAILURE: Unsupported Command: " << ack.command;
                     }
                         break;
                     case MAV_RESULT_FAILED:
                     {
-                        cout << "FAILURE: Failed Command: " << ack.command;
+                        ofLogError("ofxMavlink") << "FAILURE: Failed Command: " << ack.command;
                     }
                         break;
                     }
